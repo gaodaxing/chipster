@@ -12,6 +12,7 @@
 		<tool runtime="R-3.0"><resource>norm-agilent-miRNA.R</resource></tool>
 		<tool runtime="R-3.0"><resource>norm-cdna.R</resource></tool>
 		<tool runtime="R-3.0"><resource>norm-illumina.R</resource></tool>
+		<tool runtime="R-3.1.2"><resource>norm-illumina-backgroundcorr.R</resource></tool>	
 		<tool runtime="R-3.0"><resource>norm-illumina-lumi.R</resource></tool>
 		<tool runtime="R-3.0"><resource>norm-illumina-methylumi.R</resource></tool>
 		<tool runtime="R-3.0"><resource>norm-illumina-SNP.R</resource></tool>
@@ -177,6 +178,7 @@
 		<tool runtime="R-3.0"><resource>import-ArrayExpress.R</resource></tool>
 		<tool runtime="R-3.0"><resource>intersect-lists.R</resource></tool>
 		<tool runtime="R-3.0"><resource>output_test.R</resource></tool>
+		<tool runtime="R-3.0" module="common"><resource>join_tsv_files.R</resource></tool>
 	</category>
 	
 	<category name="Hidden" hidden="true" color="#0">

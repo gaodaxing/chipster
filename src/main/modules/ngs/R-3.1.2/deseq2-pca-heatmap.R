@@ -1,11 +1,12 @@
 # TOOL deseq2-pca-heatmap.R: "PCA and heatmap of samples with DESeq2" (Creates PCA and heatmap plots for samples using the DESeq2 Bioconductor package. Visualizing similarities and dissimilarities between samples can help you to perform experiment level quality control. This tool takes as input a table of raw counts. The count table has to be associated with a phenodata file describing the experimental groups. You can create the count table and phenodata file using the tool \"Utilities - Define NGS experiment\".)
 # INPUT data.tsv: "Count table" TYPE GENERIC
-# INPUT phenodata.tsv: "Phenodata file" TYPE GENERIC
-# OUTPUT OPTIONAL pca-deseq2.pdf
-# OUTPUT OPTIONAL heatmap-deseq2.pdf
-# PARAMETER column: "Column describing groups" TYPE METACOLUMN_SEL DEFAULT group (Phenodata column describing the experimental groups.)
+# INPUT META phenodata.tsv: "Phenodata file" TYPE GENERIC
+# OUTPUT OPTIONAL PCA_and_heatmap_deseq2.pdf
+# PARAMETER column: "Phenodata column for coloring samples" TYPE METACOLUMN_SEL DEFAULT group (Phenodata column by which the samples will be colored in the plot.)
+# PARAMETER OPTIONAL show.names: "Show names in plot" TYPE [yes, no] DEFAULT yes (Show sample names in plot. In more cpmplex cases this may make the plot too cluttered.)
 
 # EK 3.2.2015 
+# AMS 22.4.2015 Added option for sample names in plot
 
 # Loads the libraries
 library(DESeq2)
@@ -33,15 +34,24 @@ vst<-varianceStabilizingTransformation(dds)
 vstmat<-assay(vst)
 
 # Make PCA plot as pdf
-# plotPCA(vst,intgroup="condition")
 
 data <- plotPCA(vst, intgroup=c("condition"), returnData=TRUE)
 percentVar <- round(100 * attr(data, "percentVar"))
-pdf(file="pca-deseq2.pdf")
-ggplot(data, aes(PC1, PC2, color=condition)) +
-		geom_point(size=6,shape=0) +
-		xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-		ylab(paste0("PC2: ",percentVar[2],"% variance"))
+desc <- phenodata[,7]
+
+pdf(file="01-pca-deseq2.pdf")
+	if (show.names == "yes"){
+		ggplot(data, aes(PC1, PC2, color=condition)) +
+			geom_point(size=6) +
+			geom_text(aes(label=desc),hjust=0, vjust=1.7, color="black", size=4) +
+			xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+			ylab(paste0("PC2: ",percentVar[2],"% variance"))
+	}else{
+		ggplot(data, aes(PC1, PC2, color=condition)) +
+			geom_point(size=6) +
+			xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+			ylab(paste0("PC2: ",percentVar[2],"% variance"))
+}
 dev.off()
 
 # Make a distance matrix and name samples accroding to the phenodata description column
@@ -54,7 +64,7 @@ hcvst<-hclust(distvst)
 
 # Make the colors and plot the heatmap as pdf
 hmcol<-colorRampPalette(brewer.pal(9,"GnBu"))(100)
-pdf(file="heatmap-deseq2.pdf")
+pdf(file="02-heatmap-deseq2.pdf")
 heatmap.2(mdistvst,Rowv=as.dendrogram(hcvst),Colv=as.dendrogram(hcvst),symm=TRUE,trace="none",col=rev(hmcol),margin=c(13,13))
 dev.off()
 
@@ -64,7 +74,5 @@ dev.off()
 # distrld<-dist(t(rldmat))
 # mdistrld<-as.matrix(distrld)
 # hcrld<-hclust(distrld)
-
-
-
+system("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=PCA_and_heatmap_deseq2.pdf *.pdf")
 

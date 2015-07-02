@@ -1,4 +1,4 @@
-# TOOL annotate-ensembl-ids.R: "Annotate Ensembl-IDs" (Annotates Ensembl IDs with gene symbols and descriptions, creates a new table containing these and the values in the original input file. The Ensembl IDs need to be either the rownames or in the first column of the input table.)
+# TOOL annotate-ensembl-ids.R: "Annotate Ensembl identifiers" (Annotates Ensembl IDs with gene symbols and descriptions, creates a new table containing these and the values in the original input file. The Ensembl IDs need to be either the rownames or in the first column of the input table.)
 # INPUT genelist.tsv: genelist.tsv TYPE GENERIC
 # OUTPUT annotated.tsv: annotated.tsv 
 # PARAMETER species: Species TYPE [human: human, mouse: mouse, rat: rat] DEFAULT human (The species needs to be specified in order to annotate the Ensembl IDs.)
@@ -48,17 +48,22 @@ rownames(ensembl_table)	<- genes;
 colnames(ensembl_table) <- colnames(genes_ensembl_org);
 
 # Build the table:
+# if identifiers in the first column:
 if(!is.na(pmatch("ENS", dat[2,1]))) {
 	results <- cbind(dat[,1], ensembl_table[,3:4], dat[,2:ncol(dat)]);
 	colnames(results) <- c(colnames(dat)[1], "symbol", "description", colnames(dat)[2:ncol(dat)])
+	# write result table to output
+	write.table(results, file="annotated.tsv", col.names=T, quote=F, sep="\t", row.names=F)
 }
+# if identifiers = rownames:
 if(!is.na(pmatch("ENS",  rownames(dat)[2] ))) {
-	results <- cbind(genes, ensembl_table[,3:4], dat);
-	colnames(results) <- c("Ensembl ID","symbol", "description",  colnames(dat));
+	#results <- cbind(genes, ensembl_table[,3:4], dat);
+	results <- cbind(ensembl_table[,3:4], dat);
+	colnames(results) <- c("symbol", "description",  colnames(dat));
+	rownames(results) <- rownames(dat)
+	# write result table to output
+	write.table(results, file="annotated.tsv", col.names=T, quote=F, sep="\t", row.names=T)
 }
-
-# write result table to output
-write.table(results, file="annotated.tsv", col.names=T, quote=F, sep="\t", row.names=F)
 
 
 

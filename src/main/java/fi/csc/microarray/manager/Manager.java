@@ -21,12 +21,11 @@ import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.h2.tools.Server;
 import org.joda.time.DateTime;
@@ -113,7 +112,7 @@ public class Manager extends MonitoredNodeBase implements MessagingListener, Shu
 		");";
 	
 	private static final String CREATE_JOBS_INDEXES = 
-			"create index if not exists INDEX_ADMIN_WEB_STARTTIMEDESC_ID on JOBS(STARTTIME DESC, ID);" + 
+			"create index if not exists INDEX_ADMIN_WEB_ENDTIMEDESC_ID on JOBS(ENDTIME DESC, ID);" + 
 			"create index if not exists INDEX_ADMIN_WEB_USERNAME on JOBS(USERNAME);" + 
 			"create index if not exists INDEX_ADMIN_WEB_OPERATION on JOBS(OPERATION);" + 
 			"create index if not exists INDEX_ADMIN_WEB_STATUS on JOBS(STATUS);";
@@ -284,9 +283,7 @@ public class Manager extends MonitoredNodeBase implements MessagingListener, Shu
 	private void startAdmin(Configuration configuration) throws IOException,
 			Exception {
 		org.eclipse.jetty.server.Server adminServer = new org.eclipse.jetty.server.Server();
-		adminServer.setThreadPool(new QueuedThreadPool());
-		Connector connector = new SelectChannelConnector();
-		connector.setServer(adminServer);
+		ServerConnector connector = new ServerConnector(adminServer);
 		connector.setPort(configuration.getInt("manager", "admin-port"));
 		adminServer.setConnectors(new Connector[]{ connector });
 		
@@ -345,7 +342,9 @@ public class Manager extends MonitoredNodeBase implements MessagingListener, Shu
 	            parameters.put("status", jobLogMessage.getState().toString()); 
 	            parameters.put("starttime", jobLogMessage.getStartTime()); 
 	            parameters.put("endtime", jobLogMessage.getEndTime());
-	            parameters.put("wallclockTime", (jobLogMessage.getEndTime().getTime() - jobLogMessage.getStartTime().getTime()) / 1000);
+	            if (jobLogMessage.getEndTime() != null && jobLogMessage.getStartTime() != null) {
+	            	parameters.put("wallclockTime", (jobLogMessage.getEndTime().getTime() - jobLogMessage.getStartTime().getTime()) / 1000);
+	            }
 	            parameters.put("errorMessage", jobLogMessage.getErrorMessage());
 	            parameters.put("outputText", jobLogMessage.getOutputText()); 
 	            parameters.put("username", jobLogMessage.getUsername());
@@ -358,7 +357,7 @@ public class Manager extends MonitoredNodeBase implements MessagingListener, Shu
 		} else if (chipsterMessage instanceof FeedbackMessage) {
 		    // user gives feedback after seeing an error message
 		    FeedbackMessage feedback = (FeedbackMessage) chipsterMessage;
-		    logger.info("Feedback received: " + feedback.getDetails());
+		    logger.info("got feedback from: " + feedback.getUsername());
 		    
 		    // formulate an email
 		    String replyEmail = !feedback.getEmail().equals("") ?
