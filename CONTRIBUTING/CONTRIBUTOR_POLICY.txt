@@ -1,0 +1,23 @@
+
+As a compromise between implicit contributor policy (no agreement) and heavy contributor agreement 
+policy, we have adopted a minimal CLA approach.
+
+Idea: "best effort CLA practise", as a compromise between not having CLA's and strict CLA practise. 
+We have CLA template file, you must include copy in the first pull request filled with your name 
+and Github ID.
+
+Best effort = no addresses or other personal information collected (no registry policies needed), 
+no automatic checking of pull requests, no legally bullet proof electronic signing of CLA, no 
+transfer of copyrights.
+
+When contributing to the project, do the following:
+
+ 1) Make copy of CONTRIBUTING/agreement_template.txt to your name, e.g. CONTRIBUTING/jane_doe.txt
+ 
+ 2) Fill in your name to the template text
+ 
+ 3) Commit changes to your repository
+ 
+ 4) Include the commit in your pull request
+ 
+ 
