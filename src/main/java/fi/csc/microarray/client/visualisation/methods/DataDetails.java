@@ -258,7 +258,11 @@ public class DataDetails extends Visualisation implements FocusListener, Documen
 	}
 	
 	private String getDateText(DataBean data) {
-		return data.getDate().toString();		
+		if (data.getDate() != null) {
+			return data.getDate().toString();
+		} else {
+			return "";
+		}
 	}
 	
 	private String getSizeText(DataBean data) {

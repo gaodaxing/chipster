@@ -7,6 +7,7 @@ import java.util.List;
 import org.w3c.dom.Document;
 
 import de.schlichtherle.truezip.zip.ZipFile;
+import fi.csc.chipster.client.RestSessionLoader;
 import fi.csc.microarray.client.operation.OperationRecord;
 import fi.csc.microarray.databeans.DataManager;
 import fi.csc.microarray.exception.MicroarrayException;
@@ -71,16 +72,19 @@ public class SessionLoader {
 			
 		} else {
 			// use new loader
-			SessionLoaderImpl2 impl;
 			if (sessionFile != null) {
-				impl = new SessionLoaderImpl2(sessionFile, dataManager, isDatalessSession);
+				SessionLoaderImpl2 impl = new SessionLoaderImpl2(sessionFile, dataManager, isDatalessSession);
+				impl.setXOffset(xOffset);
+				impl.loadSession();
+				sessionNotes = impl.getSessionNotes();
+				unfinishedJobs = impl.getUnfinishedOperations();
 			} else {
-				impl = new SessionLoaderImpl2(sessionId, dataManager, isDatalessSession);
+				RestSessionLoader impl = new RestSessionLoader(sessionId);
+				impl.setXOffset(xOffset);
+				impl.loadSession();
+				sessionNotes = impl.getSessionNotes();
+				unfinishedJobs = impl.getUnfinishedOperations();
 			}
-			impl.setXOffset(xOffset);
-			impl.loadSession();
-			sessionNotes = impl.getSessionNotes();
-			unfinishedJobs = impl.getUnfinishedOperations();
 		}
 	}
 

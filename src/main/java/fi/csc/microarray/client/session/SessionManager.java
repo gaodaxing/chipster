@@ -9,24 +9,24 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.jms.JMSException;
 import javax.swing.Timer;
 
 import org.apache.log4j.Logger;
 
+import fi.csc.chipster.client.RestSessionSaver;
 import fi.csc.microarray.client.ClientApplication;
 import fi.csc.microarray.client.Session;
 import fi.csc.microarray.client.dialog.ChipsterDialog.DetailsVisibility;
 import fi.csc.microarray.client.dialog.DialogInfo.Severity;
 import fi.csc.microarray.client.operation.OperationRecord;
 import fi.csc.microarray.client.tasks.TaskExecutor;
-import fi.csc.microarray.config.DirectoryLayout;
 import fi.csc.microarray.databeans.DataChangeEvent;
 import fi.csc.microarray.databeans.DataChangeListener;
 import fi.csc.microarray.databeans.DataManager;
 import fi.csc.microarray.filebroker.DbSession;
-import fi.csc.microarray.filebroker.DerbyMetadataServer;
 import fi.csc.microarray.filebroker.FileBrokerClient;
 import fi.csc.microarray.filebroker.QuotaExceededException;
 import fi.csc.microarray.messaging.admin.StorageAdminAPI.StorageEntryMessageListener;
@@ -63,7 +63,7 @@ public class SessionManager {
 	}
 
 	protected static final String ALIVE_SIGNAL_FILENAME = "i_am_alive";
-	protected static final int SESSION_BACKUP_INTERVAL = 5 * 1000;
+	protected static final int SESSION_BACKUP_INTERVAL = 500 * 1000;
 
 	private String sessionNotes;
 	private String currentSessionName;
@@ -79,6 +79,7 @@ public class SessionManager {
 	private FileBrokerClient fileBrokerClient;
 	private SessionManagerCallback callback;
 	private TaskExecutor taskExecutor;
+	private UUID sessionId;
 
 	/**
 	 * @param dataManager
@@ -279,19 +280,10 @@ public class SessionManager {
 		return buffer.toString();
 	}
 
-	public String saveStorageSession(String name) throws Exception {
+	public void saveStorageSession(String name) throws Exception {
 
-		String sessionId = CryptoKey.generateRandom();
-		SessionSaver sessionSaver = new SessionSaver(sessionId, dataManager);
-		sessionSaver.setSessionNotes(sessionNotes);
-		sessionSaver.setUnfinishedJobs(callback.getUnfinishedJobs());
-		// upload/move data files and upload metadata files, if needed
-		LinkedList<String> dataIds = sessionSaver.saveStorageSession();
-
-		// add metadata to file broker database (make session visible)
-		fileBrokerClient.saveRemoteSession(name, sessionId, dataIds);
-
-		return sessionId;
+		RestSessionSaver sessionSaver = new RestSessionSaver();
+		sessionSaver.saveSession();
 	}
 
 	/**
@@ -402,12 +394,15 @@ public class SessionManager {
 	}
 
 	public boolean areCloudSessionsEnabled() {
-		boolean conf = DirectoryLayout.getInstance().getConfiguration()
-				.getBoolean("client", "enable-cloud-sessions");
-		boolean specialUser = DerbyMetadataServer.DEFAULT_EXAMPLE_SESSION_OWNER
-				.equals(Session.getSession().getUsername());
+		
+		return true;
 
-		return conf || specialUser;
+//		boolean conf = DirectoryLayout.getInstance().getConfiguration()
+//				.getBoolean("client", "enable-cloud-sessions");
+//		boolean specialUser = DerbyMetadataServer.DEFAULT_EXAMPLE_SESSION_OWNER
+//				.equals(Session.getSession().getUsername());
+//
+//		return conf || specialUser;
 	}
 
 	public void restoreSessionAndWait(File file) {
@@ -495,15 +490,12 @@ public class SessionManager {
 			String remoteSessionName) {
 
 		try {
-			String sessionId = null;
-
 			if (isRemote) {
-				sessionId = saveStorageSession(remoteSessionName);
+				saveStorageSession(remoteSessionName);
 			} else {
 				saveSession(localFile);
+				setSession(localFile, null);
 			}
-
-			setSession(localFile, sessionId);
 
 			unsavedChanges = false;
 			return true;
@@ -675,5 +667,13 @@ public class SessionManager {
 
 	public void setUnsavedChanges() {
 		this.unsavedChanges = true;
+	}
+
+	public UUID getSessionId() {
+		return this.sessionId;
+	}
+
+	public void setSessionId(UUID sessionId) {
+		this.sessionId = sessionId;
 	}
 }

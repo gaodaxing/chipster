@@ -181,7 +181,9 @@ public class RemoteSessionAccessory extends JPanel implements ActionListener, Pr
 			RemoteSessionChooserFactory.updateRemoteSessions(sessionManager, fileChooser);
 
 			StorageEntryMessageListener reply = sessionManager.getStorageUsage();
-			
+			if (reply == null) {
+				return;
+			}
 			long quota = reply.getQuota();
 			long quotaWarning = reply.getQuotaWarning();
 			long diskUsage = reply.getStorageUsage();
@@ -262,6 +264,9 @@ public class RemoteSessionAccessory extends JPanel implements ActionListener, Pr
 						String preview = " ";
 
 						StorageEntryMessageListener reply = sessionManager.getStorageUsage();
+						if (reply == null) {
+							return;
+						}
 						for (StorageEntry session : reply.getEntries()) {						
 							if (uuid.equals(session.getID())) {
 								preview += Strings.toHumanReadable(session.getSize(), true, true) + "B, ";

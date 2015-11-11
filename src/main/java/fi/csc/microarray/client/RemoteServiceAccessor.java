@@ -2,11 +2,11 @@ package fi.csc.microarray.client;
 
 import java.util.Collection;
 
+import fi.csc.chipster.client.RestFileBrokerClient;
 import fi.csc.microarray.client.operation.ToolModule;
 import fi.csc.microarray.client.tasks.TaskExecutor;
 import fi.csc.microarray.databeans.DataManager;
 import fi.csc.microarray.filebroker.FileBrokerClient;
-import fi.csc.microarray.filebroker.JMSFileBrokerClient;
 import fi.csc.microarray.messaging.DescriptionMessageListener;
 import fi.csc.microarray.messaging.JMSMessagingEndpoint;
 import fi.csc.microarray.messaging.MessagingEndpoint;
@@ -40,7 +40,7 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 		endpoint = new JMSMessagingEndpoint(nodeSupport, authenticationRequestListener, true);
 		this.initialise(endpoint, 
 				manager, 
-				new JMSFileBrokerClient(endpoint.createTopic(Topics.Name.FILEBROKER_TOPIC, AccessMode.WRITE)));
+				new RestFileBrokerClient());
 	}		
 
 	

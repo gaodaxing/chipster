@@ -208,7 +208,7 @@ public class VisualisationFrameManager implements PropertyChangeListener, DataCh
 	 * in right order with this method.
 	 * 
 	 * @param visualisation
-	 * @param target
+	 * @param fileBrokerTarget
 	 */
 	public void showVisualisationComponent(JComponent visualisation, VisualisationMethodChangedEvent e) {
 				
