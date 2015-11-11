@@ -150,7 +150,7 @@ public class RestSessionLoader {
 			
 //			String colorString = operationType.getCategoryColor();
 //			if (colorString != null) {
-//				operationRecord.setCategoryColor(Color.decode(colorString));
+//				operationRecord.setCategoryColor(Color.decode(colorString));lätti
 //			}
 
 			// module
@@ -279,12 +279,6 @@ public class RestSessionLoader {
 			OperationRecord operationRecord = null;
 			if (jobId != null) {
 				operationRecord = operationRecords.get(jobId.toString());
-				
-				Job job = session.getJobs().get(jobId);
-				for (Input input : job.getInputs()) {					
-					DataBean target = dataBeans.get(input.getDatasetId());
-					dataBean.addLink(Link.DERIVATION, target);
-				}
 			}
 
 			// if operation record is not found use dummy
@@ -296,30 +290,25 @@ public class RestSessionLoader {
 		}
 	}
 
-//	/**
-//	 * @param session 
-//	 * 
-//	 */
-//	private void linkDataBeans(fi.csc.chipster.sessiondb.model.Session session) {
-//		for (DataBean dataBean : dataBeans.values()) {
-//			for (LinkType linkType : dataTypes.get(dataBean).getLink()) {
-//				// if something goes wrong for this link, continue with others
-//				try {
-//					String targetID = linkType.getTarget();
-//					if (targetID != null) {
-//						DataBean targetBean = dataBeans.get(targetID);
-//						if (targetBean != null) {
-//							dataBean.addLink(Link.valueOf(linkType.getType()), targetBean);
-//						}
-//					}
-//					
-//				} catch (Exception e) {
-//					logger.warn("could not add link", e);
-//					continue;
-//				}
-//			}
-//		}
-//	}
+	/**
+	 * @param session 
+	 * 
+	 */
+	private void linkDataBeans(fi.csc.chipster.sessiondb.model.Session session) {
+		for (DataBean dataBean : dataBeans.values()) {
+			
+			Dataset dataset = session.getDatasets().get(UUID.fromString(dataBean.getId()));
+			UUID jobId = dataset.getSourceJob();
+			
+			if (jobId != null) {				
+				Job job = session.getJobs().get(jobId);
+				for (Input input : job.getInputs()) {					
+					DataBean target = dataBeans.get(input.getDatasetId());
+					dataBean.addLink(Link.DERIVATION, target);
+				}
+			}
+		}
+	}
 	
 	/**
 	 * 
@@ -341,7 +330,7 @@ public class RestSessionLoader {
 		linkOperationsToOutputs(session);
 				
 		linkDataItemChildren(dataManager.getRootFolder());
-		//linkDataBeans(session);
+		linkDataBeans(session);
 		linkInputsToOperations(session);
 		
 		//getUnfinishedOperations(session);
