@@ -51,7 +51,7 @@ public class MicroarrayMain {
 			cmdParser.addParameter("ping-nagios", false, false, null, "query and print system status in nagios compatible format");			
 			cmdParser.addParameter("rcheck", false, true, null, "check R script syntax");
 			cmdParser.addParameter("-config", false, true, null, "configuration file URL (chipster-config.xml)");
-			cmdParser.addParameter("-public-ip", false, true, null, "address of the rest proxy");
+			cmdParser.addParameter("-rest-proxy", false, true, null, "address of the rest proxy");
             cmdParser.addParameter("-module", false, true, null, "client module (e.g. fi.csc.microarray.module.chipster.MicroarrayModule)");
 			
 			// parse commandline
@@ -149,13 +149,13 @@ public class MicroarrayMain {
 
 				final String module = cmdParser.getValue("-module");
 				final String config = configURL;
-				final String publicIp = cmdParser.getValue("-public-ip");
+				final String restProxy = cmdParser.getValue("-rest-proxy");
 				
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
 					public void run() {						
 						try {
-							SwingClientApplication.start(config, module, publicIp);		
+							SwingClientApplication.start(config, module, restProxy);		
 						} catch (IOException e) {
 							e.printStackTrace();
 							System.exit(0);

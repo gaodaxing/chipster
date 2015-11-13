@@ -39,14 +39,14 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 	};
 	private Collection<ToolModule> modules = null;
 	private SessionDbClient sessionDbClient;
-	private String publicIp;
+	private String restProxy;
 	private AuthenticationClient authService;
 
 	public RemoteServiceAccessor() {
 	}
 	
-	public RemoteServiceAccessor(String publicIp) {
-		this.publicIp = publicIp;		
+	public RemoteServiceAccessor(String restProxy) {
+		this.restProxy = restProxy;		
 	}
 
 
@@ -143,7 +143,7 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 	
 	public AuthenticationClient getAuthClient() {
 		if (authService == null) {
-			this.authService = new AuthenticationClient("http://" + publicIp + "/auth/", "client", "clientPassword");
+			this.authService = new AuthenticationClient("http://" + restProxy + "/auth/", "client", "clientPassword");
 		}
 		return authService;
 	}
@@ -151,7 +151,7 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 
 	public SessionDbClient getSessionDbClient() {
 		if (sessionDbClient == null) {			
-			sessionDbClient = new SessionDbClient("http://" + publicIp + "/sessiondb/", "http://" + publicIp + "/sessiondbevents/",  getAuthClient().getCredentials());
+			sessionDbClient = new SessionDbClient("http://" + restProxy + "/sessiondb/", "http://" + restProxy + "/sessiondbevents/",  getAuthClient().getCredentials());
 		}
 		return sessionDbClient;
 	}
@@ -159,7 +159,7 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 
 	public WebTarget getRestFileBrokerClient() {
 		// impelent a proper client API for the file-broker
-		return getAuthClient().getAuthenticatedClient().target("http://" + publicIp + "/filebroker/");
+		return getAuthClient().getAuthenticatedClient().target("http://" + restProxy + "/filebroker/");
 	}
 
 }

@@ -193,10 +193,10 @@ public abstract class ClientApplication {
 		this(null, null);
 	}
 
-	public ClientApplication(AuthenticationRequestListener overridingARL, String publicIp) {
+	public ClientApplication(AuthenticationRequestListener overridingARL, String restProxy) {
 		this.configuration = DirectoryLayout.getInstance().getConfiguration();
 		this.clientConstants = new ClientConstants();
-		this.serviceAccessor = new RemoteServiceAccessor(publicIp);
+		this.serviceAccessor = new RemoteServiceAccessor(restProxy);
 		this.overridingARL = overridingARL;
 	}
     
