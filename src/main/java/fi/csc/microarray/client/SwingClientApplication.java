@@ -183,10 +183,10 @@ public class SwingClientApplication extends ClientApplication {
 		}		
 	};
 
-	public SwingClientApplication(ClientListener clientListener, AuthenticationRequestListener overridingARL, String module)
+	public SwingClientApplication(ClientListener clientListener, AuthenticationRequestListener overridingARL, String module, String publicIp)
 	        throws MicroarrayException, IOException, IllegalConfigurationException {
 
-		super(overridingARL);
+		super(overridingARL, publicIp);
 		
 		// this had to be delayed as logging is not available before loading configuration
 		logger = Logger.getLogger(SwingClientApplication.class);
@@ -1231,8 +1231,9 @@ public class SwingClientApplication extends ClientApplication {
 	/**
 	 * Starts Chipster client. Configuration (logging) should be initialised
 	 * before calling this method.
+	 * @param publicIp 
 	 */
-	public static void start(String configURL, String module) throws IOException {
+	public static void start(String configURL, String module, String publicIp) throws IOException {
 
 		try {
 			DirectoryLayout.initialiseClientLayout(configURL);			
@@ -1244,7 +1245,7 @@ public class SwingClientApplication extends ClientApplication {
 		ClientListener shutdownListener = getShutdownListener();
 		
 		try {						
-			new SwingClientApplication(shutdownListener, null, module);
+			new SwingClientApplication(shutdownListener, null, module, publicIp);
 			
 		} catch (Throwable t) {
 			t.printStackTrace();
@@ -1256,7 +1257,7 @@ public class SwingClientApplication extends ClientApplication {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		start(null, "fi.csc.microarray.module.chipster.MicroarrayModule");
+		start(null, "fi.csc.microarray.module.chipster.MicroarrayModule", null);
 	}
 
 	public static void reportIllegalConfigurationException(IllegalConfigurationException e) {

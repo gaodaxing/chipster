@@ -190,13 +190,13 @@ public abstract class ClientApplication {
 	private SessionManager sessionManager;
 
 	public ClientApplication() {
-		this(null);
+		this(null, null);
 	}
 
-	public ClientApplication(AuthenticationRequestListener overridingARL) {
+	public ClientApplication(AuthenticationRequestListener overridingARL, String publicIp) {
 		this.configuration = DirectoryLayout.getInstance().getConfiguration();
 		this.clientConstants = new ClientConstants();
-		this.serviceAccessor = new RemoteServiceAccessor();
+		this.serviceAccessor = new RemoteServiceAccessor(publicIp);
 		this.overridingARL = overridingARL;
 	}
     

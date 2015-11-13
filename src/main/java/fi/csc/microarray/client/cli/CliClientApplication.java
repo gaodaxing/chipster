@@ -24,7 +24,7 @@ public class CliClientApplication extends ClientApplication {
 
 	public CliClientApplication(SimpleAuthenticationRequestListener auth,
 			boolean verbose, boolean quiet) {
-		super(auth);
+		super(auth, null);
 		this.verbose = verbose;
 		this.quiet = quiet;		
 	}

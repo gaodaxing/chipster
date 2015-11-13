@@ -5,10 +5,7 @@ import java.util.Collection;
 import javax.ws.rs.client.WebTarget;
 
 import fi.csc.chipster.auth.AuthenticationClient;
-import fi.csc.chipster.auth.model.Role;
 import fi.csc.chipster.client.RestFileBrokerClient;
-import fi.csc.chipster.rest.Config;
-import fi.csc.chipster.servicelocator.ServiceLocatorClient;
 import fi.csc.chipster.sessiondb.SessionDbClient;
 import fi.csc.microarray.client.operation.ToolModule;
 import fi.csc.microarray.client.tasks.TaskExecutor;
@@ -42,12 +39,20 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 	};
 	private Collection<ToolModule> modules = null;
 	private SessionDbClient sessionDbClient;
-	private ServiceLocatorClient serviceLocator;
+	private String publicIp;
+	private AuthenticationClient authService;
+
+	public RemoteServiceAccessor() {
+	}
+	
+	public RemoteServiceAccessor(String publicIp) {
+		this.publicIp = publicIp;		
+	}
+
 
 	public void initialise(DataManager manager, AuthenticationRequestListener authenticationRequestListener) throws Exception {								
 		
-		this.endpoint = new JMSMessagingEndpoint(nodeSupport, authenticationRequestListener, true);
-		this.serviceLocator = new ServiceLocatorClient(new Config());
+		this.endpoint = new JMSMessagingEndpoint(nodeSupport, authenticationRequestListener, true);		
 		this.initialise(endpoint, 
 				manager, 
 				new RestFileBrokerClient());
@@ -135,13 +140,18 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 	public boolean isStandalone() {
 		return false;
 	}
+	
+	public AuthenticationClient getAuthClient() {
+		if (authService == null) {
+			this.authService = new AuthenticationClient("http://" + publicIp + "/auth/", "client", "clientPassword");
+		}
+		return authService;
+	}
 
 
 	public SessionDbClient getSessionDbClient() {
-		if (sessionDbClient == null) {
-			
-			AuthenticationClient authService = new AuthenticationClient(serviceLocator, "client", "clientPassword");
-			sessionDbClient = new SessionDbClient(serviceLocator, authService.getCredentials());
+		if (sessionDbClient == null) {			
+			sessionDbClient = new SessionDbClient("http://" + publicIp + "/sessiondb/", "http://" + publicIp + "/sessiondbevents/",  getAuthClient().getCredentials());
 		}
 		return sessionDbClient;
 	}
@@ -149,7 +159,7 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 
 	public WebTarget getRestFileBrokerClient() {
 		// impelent a proper client API for the file-broker
-		return new AuthenticationClient(serviceLocator, "client", "clientPassword").getAuthenticatedClient().target(serviceLocator.get(Role.FILE_BROKER).get(0));
+		return getAuthClient().getAuthenticatedClient().target("http://" + publicIp + "/filebroker/");
 	}
 
 }
