@@ -2,7 +2,14 @@ package fi.csc.microarray.client;
 
 import java.util.Collection;
 
+import javax.ws.rs.client.WebTarget;
+
+import fi.csc.chipster.auth.AuthenticationClient;
+import fi.csc.chipster.auth.model.Role;
 import fi.csc.chipster.client.RestFileBrokerClient;
+import fi.csc.chipster.rest.Config;
+import fi.csc.chipster.servicelocator.ServiceLocatorClient;
+import fi.csc.chipster.sessiondb.SessionDbClient;
 import fi.csc.microarray.client.operation.ToolModule;
 import fi.csc.microarray.client.tasks.TaskExecutor;
 import fi.csc.microarray.databeans.DataManager;
@@ -34,10 +41,13 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 		}
 	};
 	private Collection<ToolModule> modules = null;
+	private SessionDbClient sessionDbClient;
+	private ServiceLocatorClient serviceLocator;
 
 	public void initialise(DataManager manager, AuthenticationRequestListener authenticationRequestListener) throws Exception {								
 		
-		endpoint = new JMSMessagingEndpoint(nodeSupport, authenticationRequestListener, true);
+		this.endpoint = new JMSMessagingEndpoint(nodeSupport, authenticationRequestListener, true);
+		this.serviceLocator = new ServiceLocatorClient(new Config());
 		this.initialise(endpoint, 
 				manager, 
 				new RestFileBrokerClient());
@@ -56,7 +66,7 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 		this.endpoint = endpoint;
 	    this.requestTopic = endpoint.createTopic(Topics.Name.REQUEST_TOPIC,AccessMode.WRITE);	    
 		this.filebrokerClient = fileBrokerClient;
-	    this.taskExecutor = new TaskExecutor(endpoint, manager);
+	    this.taskExecutor = new TaskExecutor(endpoint, manager);	    
 	}
 
 	public TaskExecutor getTaskExecutor() {
@@ -124,6 +134,22 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 	@Override
 	public boolean isStandalone() {
 		return false;
+	}
+
+
+	public SessionDbClient getSessionDbClient() {
+		if (sessionDbClient == null) {
+			
+			AuthenticationClient authService = new AuthenticationClient(serviceLocator, "client", "clientPassword");
+			sessionDbClient = new SessionDbClient(serviceLocator, authService.getCredentials());
+		}
+		return sessionDbClient;
+	}
+
+
+	public WebTarget getRestFileBrokerClient() {
+		// impelent a proper client API for the file-broker
+		return new AuthenticationClient(serviceLocator, "client", "clientPassword").getAuthenticatedClient().target(serviceLocator.get(Role.FILE_BROKER).get(0));
 	}
 
 }

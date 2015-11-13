@@ -6,21 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
 import org.apache.log4j.Logger;
 
-import fi.csc.chipster.auth.AuthenticationClient;
-import fi.csc.chipster.rest.Config;
 import fi.csc.chipster.rest.RestUtils;
-import fi.csc.chipster.servicelocator.ServiceLocatorClient;
+import fi.csc.chipster.sessiondb.SessionDbClient;
 import fi.csc.chipster.sessiondb.model.Dataset;
 import fi.csc.chipster.sessiondb.model.Input;
 import fi.csc.chipster.sessiondb.model.Job;
 import fi.csc.chipster.sessiondb.model.Parameter;
+import fi.csc.microarray.client.RemoteServiceAccessor;
 import fi.csc.microarray.client.Session;
 import fi.csc.microarray.client.operation.OperationRecord;
 import fi.csc.microarray.client.operation.OperationRecord.InputRecord;
@@ -32,7 +26,6 @@ import fi.csc.microarray.client.tasks.TaskExecutor;
 import fi.csc.microarray.databeans.DataBean;
 import fi.csc.microarray.databeans.DataBean.DataNotAvailableHandling;
 import fi.csc.microarray.databeans.DataManager;
-import fi.csc.microarray.exception.MicroarrayException;
 import fi.csc.microarray.filebroker.ChecksumInputStream;
 import fi.csc.microarray.filebroker.FileBrokerClient;
 import fi.csc.microarray.messaging.JobState;
@@ -42,25 +35,23 @@ public class RestSessionSaver {
 	@SuppressWarnings("unused")
 	private static final Logger logger = Logger.getLogger(RestSessionSaver.class);
 	
-	ServiceLocatorClient serviceLocatorClient = new ServiceLocatorClient(new Config());
-	WebTarget sessionDbTarget = new AuthenticationClient(serviceLocatorClient, "client", "clientPassword").getAuthenticatedClient().target("http://localhost:8001/sessiondb/");
+	private DataManager 		dataManager 	= Session.getSession().getDataManager();
+	private SessionManager 		sessionManager 	= Session.getSession().getApplication().getSessionManager();
+	private TaskExecutor 		taskExecutor 	= Session.getSession().getApplication().getTaskExecutor();
+	private FileBrokerClient 	fileBroker 		= Session.getSession().getServiceAccessor().getFileBrokerClient();
+	private SessionDbClient 	sessionDbClient = ((RemoteServiceAccessor) Session.getSession().getServiceAccessor()).getSessionDbClient();
 
 	public RestSessionSaver() {
 	}
 	
 	public void saveSession() throws Exception{
-		
-		DataManager 		dataManager 	= Session.getSession().getDataManager();
-		SessionManager 		sessionManager 	= Session.getSession().getApplication().getSessionManager();
-		TaskExecutor 		taskExecutor 	= Session.getSession().getApplication().getTaskExecutor();
-		FileBrokerClient 	fileBroker 		= Session.getSession().getServiceAccessor().getFileBrokerClient();
 				
 		fi.csc.chipster.sessiondb.model.Session session = new fi.csc.chipster.sessiondb.model.Session();
 		session.setName(sessionManager.getSessionName());
 		session.setNotes(sessionManager.getSessionNotes());
 		session.setCreated(LocalDateTime.now());
 		
-		UUID sessionId = postSession(session);		
+		UUID sessionId = sessionDbClient.createSession(session);		
 		sessionManager.setSessionId(sessionId);
 
 		// create datasets
@@ -69,7 +60,7 @@ public class RestSessionSaver {
 		for (DataBean bean : dataManager.databeans()) {
 	
 			Dataset dataset = dataBeanToDataset(bean);
-			UUID datasetId = postDataset(sessionId, dataset);
+			UUID datasetId = sessionDbClient.createDataset(sessionId, dataset);
 			dataset.setDatasetId(datasetId);
 
 			ChecksumInputStream inStream = dataManager.getContentStream(bean, DataNotAvailableHandling.EXCEPTION_ON_NA);
@@ -85,17 +76,17 @@ public class RestSessionSaver {
 			DataBean bean = datasetToDataBean.get(dataset);
 			OperationRecord record = bean.getOperationRecord();
 			Job job = operationRecordToJob(record, null, dataIdToDataset);
-			UUID jobId = postJob(sessionId, job);
+			UUID jobId = sessionDbClient.createJob(sessionId, job);
 			
 			// update dataset's source job
-			dataset = getDataset(sessionId, dataset.getDatasetId());
+			dataset = sessionDbClient.getDataset(sessionId, dataset.getDatasetId());
 			dataset.setSourceJob(jobId);
-			putDataset(sessionId, dataset);
+			sessionDbClient.updateDataset(sessionId, dataset);
 		}		
 				
 		for (Task task : taskExecutor.getTasks(true, true)) {
 			Job job = operationRecordToJob(task.getOperationRecord(), task, dataIdToDataset);
-			postJob(sessionId, job);
+			sessionDbClient.createJob(sessionId, job);
 		}
 	}
 
@@ -106,47 +97,6 @@ public class RestSessionSaver {
 		dataset.setX(bean.getY());
 		dataset.setY(bean.getX());
 		return dataset;
-	}
-
-	private UUID postSession(fi.csc.chipster.sessiondb.model.Session session) throws MicroarrayException {
-		Response response = sessionDbTarget.path("sessions").request().post(Entity.entity(session, MediaType.APPLICATION_JSON), Response.class);
-		if (!RestUtils.isSuccessful(response.getStatus())) {
-			throw new MicroarrayException("post session failed " + response.getStatusInfo());
-		}
-        return UUID.fromString(RestUtils.basename(response.getLocation().getPath()));
-	}
-	
-	private UUID postDataset(UUID sessionId, Dataset dataset) throws MicroarrayException {
-		Response response = sessionDbTarget.path("sessions/" + sessionId.toString() + "/datasets").request().post(Entity.entity(dataset, MediaType.APPLICATION_JSON), Response.class);
-		if (!RestUtils.isSuccessful(response.getStatus())) {
-			throw new MicroarrayException("post dataset failed " + response.getStatusInfo());
-		}
-		return UUID.fromString(RestUtils.basename(response.getLocation().getPath()));
-	}
-	
-	private void putDataset(UUID sessionId, Dataset dataset) throws MicroarrayException {
-		Response response = sessionDbTarget.path("sessions/" + sessionId.toString() + "/datasets/" + dataset.getDatasetId().toString()).request().put(Entity.entity(dataset, MediaType.APPLICATION_JSON), Response.class);
-		if (!RestUtils.isSuccessful(response.getStatus())) {
-			throw new MicroarrayException("post dataset failed " + response.getStatusInfo());
-		}
-	}
-	
-	private Dataset getDataset(UUID sessionId, UUID datasetId) throws MicroarrayException {
-		WebTarget sessionTarget = sessionDbTarget.path("sessions/" + sessionId.toString() + "/datasets/" + datasetId);
-		Response response = sessionTarget.request().get(Response.class);
-		if (!RestUtils.isSuccessful(response.getStatus())) {
-			throw new MicroarrayException("get datasets failed: " + response.getStatus() + " " + response.readEntity(String.class) + " " + sessionTarget.getUri());
-		}
-		
-		return response.readEntity(Dataset.class);
-	}
-	
-	private UUID postJob(UUID sessionId, Job job) throws MicroarrayException {
-		Response response = sessionDbTarget.path("sessions/" + sessionId.toString() + "/jobs").request().post(Entity.entity(job, MediaType.APPLICATION_JSON), Response.class);
-		if (!RestUtils.isSuccessful(response.getStatus())) {
-			throw new MicroarrayException("post job failed " + response.getStatusInfo());
-		}
-		return UUID.fromString(RestUtils.basename(response.getLocation().getPath()));
 	}
 
 	private Job operationRecordToJob(OperationRecord record, Task task, HashMap<String, Dataset> dataIdToDataset) {

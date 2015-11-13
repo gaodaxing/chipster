@@ -1,39 +1,31 @@
 package fi.csc.chipster.client;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
-
 import org.apache.log4j.Logger;
 
-import fi.csc.chipster.auth.AuthenticationClient;
-import fi.csc.chipster.rest.Config;
 import fi.csc.chipster.rest.RestUtils;
-import fi.csc.chipster.servicelocator.ServiceLocatorClient;
+import fi.csc.chipster.sessiondb.SessionDbClient;
 import fi.csc.chipster.sessiondb.model.Dataset;
 import fi.csc.chipster.sessiondb.model.Input;
 import fi.csc.chipster.sessiondb.model.Job;
 import fi.csc.microarray.client.ClientApplication;
 import fi.csc.microarray.client.NameID;
+import fi.csc.microarray.client.RemoteServiceAccessor;
 import fi.csc.microarray.client.Session;
 import fi.csc.microarray.client.operation.OperationDefinition;
 import fi.csc.microarray.client.operation.OperationRecord;
 import fi.csc.microarray.client.operation.OperationRecord.ParameterRecord;
 import fi.csc.microarray.client.operation.parameter.Parameter;
 import fi.csc.microarray.client.session.SessionManager;
-import fi.csc.microarray.client.tasks.TaskExecutor;
 import fi.csc.microarray.databeans.DataBean;
 import fi.csc.microarray.databeans.DataBean.Link;
 import fi.csc.microarray.databeans.DataFolder;
 import fi.csc.microarray.databeans.DataItem;
 import fi.csc.microarray.databeans.DataManager;
-import fi.csc.microarray.exception.MicroarrayException;
-import fi.csc.microarray.filebroker.FileBrokerClient;
 
 public class RestSessionLoader {
 	/**
@@ -41,21 +33,15 @@ public class RestSessionLoader {
 	 */
 	private static final Logger logger = Logger.getLogger(RestSessionLoader.class);
 	
-	DataManager 		dataManager 	= Session.getSession().getDataManager();
-	SessionManager 		sessionManager 	= Session.getSession().getApplication().getSessionManager();
-	TaskExecutor 		taskExecutor 	= Session.getSession().getApplication().getTaskExecutor();
-	FileBrokerClient 	fileBroker 		= Session.getSession().getServiceAccessor().getFileBrokerClient();
-	
-	ServiceLocatorClient serviceLocatorClient = new ServiceLocatorClient(new Config());
-	WebTarget sessionDbTarget = new AuthenticationClient(serviceLocatorClient, "client", "clientPassword").getAuthenticatedClient().target("http://localhost:8001/sessiondb/");
+	private DataManager 		dataManager 	= Session.getSession().getDataManager();
+	private SessionManager 		sessionManager 	= Session.getSession().getApplication().getSessionManager();
+	private SessionDbClient 	sessionDbClient = ((RemoteServiceAccessor) Session.getSession().getServiceAccessor()).getSessionDbClient(); 
 
 	private LinkedHashMap<String, DataBean> dataBeans = new LinkedHashMap<String, DataBean>();
 	private LinkedHashMap<String, OperationRecord> operationRecords = new LinkedHashMap<String, OperationRecord>();
 
 	private Integer xOffset;
-	
 	private String sessionId;
-
 	private String sessionNotes;
 
 	public RestSessionLoader(String sessionId) {
@@ -321,7 +307,7 @@ public class RestSessionLoader {
 
 	public void loadSession() throws Exception {
 		
-		fi.csc.chipster.sessiondb.model.Session session = getSession(UUID.fromString(sessionId)); 
+		fi.csc.chipster.sessiondb.model.Session session = sessionDbClient.getSession(UUID.fromString(sessionId)); 
 		
 		this.sessionNotes = session.getNotes();	
 		
@@ -334,61 +320,6 @@ public class RestSessionLoader {
 		linkInputsToOperations(session);
 		
 		//getUnfinishedOperations(session);
-	}
-	
-	private fi.csc.chipster.sessiondb.model.Session getSession(UUID sessionId) throws MicroarrayException {
-		WebTarget sessionTarget = sessionDbTarget.path("sessions/" + sessionId.toString());
-		Response response = sessionTarget.request().get(Response.class);
-		if (!RestUtils.isSuccessful(response.getStatus())) {
-			throw new MicroarrayException("get session failed: " + response.getStatus() + " " + response.readEntity(String.class) + " " + sessionTarget.getUri());
-		}
-		
-		fi.csc.chipster.sessiondb.model.Session session = (fi.csc.chipster.sessiondb.model.Session) response.readEntity(fi.csc.chipster.sessiondb.model.Session.class);
-		
-		List<Dataset> datasets = getDatasets(sessionId);
-		List<Job> jobs = getJobs(sessionId);
-		
-		HashMap<UUID, Dataset> datasetMap = new HashMap<>();
-		HashMap<UUID, Job> jobMap = new HashMap<>();
-		
-		for (Dataset dataset : datasets) {
-			datasetMap.put(dataset.getDatasetId(), dataset);
-		}
-		
-		for (Job job : jobs) {
-			jobMap.put(job.getJobId(), job);
-		}
-		
-		session.setDatasets(datasetMap);
-		session.setJobs(jobMap);
-		
-        return session;
-	}
-	
-	private List<Dataset> getDatasets(UUID sessionId) throws MicroarrayException {
-		WebTarget sessionTarget = sessionDbTarget.path("sessions/" + sessionId.toString() + "/datasets");
-		Response response = sessionTarget.request().get(Response.class);
-		if (!RestUtils.isSuccessful(response.getStatus())) {
-			throw new MicroarrayException("get datasets failed: " + response.getStatus() + " " + response.readEntity(String.class) + " " + sessionTarget.getUri());
-		}
-		
-		String json = response.readEntity(String.class);
-		@SuppressWarnings("unchecked")
-		List<Dataset> datasets = RestUtils.parseJson(List.class, Dataset.class, json);
-        return datasets;
-	}
-	
-	private List<Job> getJobs(UUID sessionId) throws MicroarrayException {
-		WebTarget sessionTarget = sessionDbTarget.path("sessions/" + sessionId.toString() + "/jobs");
-		Response response = sessionTarget.request().get(Response.class);
-		if (!RestUtils.isSuccessful(response.getStatus())) {
-			throw new MicroarrayException("get jobs failed: " + response.getStatus() + " " + response.readEntity(String.class) + " " + sessionTarget.getUri());
-		}
-		
-		String json = response.readEntity(String.class);
-		@SuppressWarnings("unchecked")
-		List<Job> jobs = RestUtils.parseJson(List.class, Job.class, json);
-        return jobs;
 	}
 	
 	public void setXOffset(Integer xOffset) {

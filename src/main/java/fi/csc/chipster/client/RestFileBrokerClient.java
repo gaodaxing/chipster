@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -21,10 +22,10 @@ import javax.ws.rs.core.Response;
 import org.apache.log4j.Logger;
 import org.glassfish.jersey.client.ClientProperties;
 
-import fi.csc.chipster.auth.AuthenticationClient;
-import fi.csc.chipster.rest.Config;
 import fi.csc.chipster.rest.RestUtils;
-import fi.csc.chipster.servicelocator.ServiceLocatorClient;
+import fi.csc.chipster.sessiondb.RestException;
+import fi.csc.chipster.sessiondb.SessionDbClient;
+import fi.csc.microarray.client.RemoteServiceAccessor;
 import fi.csc.microarray.client.Session;
 import fi.csc.microarray.filebroker.ChecksumException;
 import fi.csc.microarray.filebroker.ChecksumInputStream;
@@ -32,6 +33,7 @@ import fi.csc.microarray.filebroker.DbSession;
 import fi.csc.microarray.filebroker.FileBrokerClient;
 import fi.csc.microarray.filebroker.FileBrokerException;
 import fi.csc.microarray.messaging.admin.StorageAdminAPI.StorageEntryMessageListener;
+import fi.csc.microarray.util.Exceptions;
 import fi.csc.microarray.util.IOUtils;
 import fi.csc.microarray.util.IOUtils.CopyProgressListener;
 
@@ -39,10 +41,9 @@ public class RestFileBrokerClient implements FileBrokerClient {
 	
 	@SuppressWarnings("unused")
 	private static final Logger logger = Logger.getLogger(RestFileBrokerClient.class);
-	
-	ServiceLocatorClient serviceLocatorClient = new ServiceLocatorClient(new Config());
-	WebTarget fileBrokerTarget = new AuthenticationClient(serviceLocatorClient, "client", "clientPassword").getAuthenticatedClient().target("http://localhost:8001/filebroker/");
-	WebTarget sessionDbTarget = new AuthenticationClient(serviceLocatorClient, "client", "clientPassword").getAuthenticatedClient().target("http://localhost:8001/sessiondb/");
+		
+	private SessionDbClient sessionDbClient = ((RemoteServiceAccessor) Session.getSession().getServiceAccessor()).getSessionDbClient();
+	private WebTarget fileBrokerTarget = ((RemoteServiceAccessor) Session.getSession().getServiceAccessor()).getRestFileBrokerClient();
 
 	/**
 	 * Add file to file broker. Must be a cached file, for other types, use other versions of this method.
@@ -162,18 +163,20 @@ public class RestFileBrokerClient implements FileBrokerClient {
 	@Override
 	public List<DbSession> listRemoteSessions() throws JMSException {
 		
-		//return new ArrayList<DbSession>();
-		
-		String json = sessionDbTarget.path("sessions").request().get(String.class);
-		@SuppressWarnings("unchecked")
-		List<fi.csc.chipster.sessiondb.model.Session> sessions = RestUtils.parseJson(List.class, fi.csc.chipster.sessiondb.model.Session.class, json);
-		
-		List<DbSession> dbSessions = new LinkedList<>();
-		for (fi.csc.chipster.sessiondb.model.Session session : sessions) {
-			dbSessions.add(new DbSession(session.getSessionId().toString(), session.getName(), null));
+		try {
+			HashMap<UUID, fi.csc.chipster.sessiondb.model.Session> sessions;
+			sessions = sessionDbClient.getSessions();
+
+			List<DbSession> dbSessions = new LinkedList<>();
+			for (fi.csc.chipster.sessiondb.model.Session session : sessions.values()) {
+				dbSessions.add(new DbSession(session.getSessionId().toString(), session.getName(), null));
+			}
+
+			return dbSessions;
+		} catch (RestException e) {
+			// the interface shouldn't require JMSExceptions()
+			throw new JMSException(Exceptions.getStackTrace(e));
 		}
-					
-		return dbSessions;
 	}
 	
 	@Override
