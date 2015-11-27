@@ -59,7 +59,7 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 		this.endpoint = new JMSMessagingEndpoint(nodeSupport, authenticationRequestListener, true);		
 		this.initialise(endpoint, 
 				manager, 
-				new RestFileBrokerClient(getSessionDbClient(), getRestFileBrokerTarget()));
+				new RestFileBrokerClient(getSessionDbClient(), restProxy, getAuthClient(), Session.getSession().getApplication().getSessionManager()));
 	}		
 
 	
