@@ -4,6 +4,8 @@ import java.util.Collection;
 
 import javax.ws.rs.client.WebTarget;
 
+import org.apache.log4j.Logger;
+
 import fi.csc.chipster.auth.AuthenticationClient;
 import fi.csc.chipster.filebroker.RestFileBrokerClient;
 import fi.csc.chipster.sessiondb.SessionDbClient;
@@ -27,6 +29,8 @@ import fi.csc.microarray.module.Module;
 
 public class RemoteServiceAccessor implements ServiceAccessor {
 
+	static final Logger logger = Logger.getLogger(RemoteServiceAccessor.class);
+	
 	protected MessagingEndpoint endpoint;
 	protected MessagingTopic requestTopic;
 	protected TaskExecutor taskExecutor;
@@ -55,7 +59,7 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 		this.endpoint = new JMSMessagingEndpoint(nodeSupport, authenticationRequestListener, true);		
 		this.initialise(endpoint, 
 				manager, 
-				new RestFileBrokerClient());
+				new RestFileBrokerClient(getSessionDbClient(), getRestFileBrokerTarget()));
 	}		
 
 	
@@ -112,8 +116,14 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 	}
 	
 	@Override
-	public void close() throws Exception {
-		endpoint.close();
+	public void close() {
+		if (endpoint != null) {
+			try {
+				endpoint.close();
+			} catch (Exception e) {
+				logger.warn("closing endpoint failed", e);
+			}
+		}
 	}
 
 	@Override
@@ -157,7 +167,7 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 	}
 
 
-	public WebTarget getRestFileBrokerClient() {
+	public WebTarget getRestFileBrokerTarget() {
 		// impelent a proper client API for the file-broker
 		return getAuthClient().getAuthenticatedClient().target("http://" + restProxy + "/filebroker/");
 	}
