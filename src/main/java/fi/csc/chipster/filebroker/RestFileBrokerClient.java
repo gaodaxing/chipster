@@ -1,4 +1,4 @@
-package fi.csc.chipster.client;
+package fi.csc.chipster.filebroker;
 
 import java.io.File;
 import java.io.FileInputStream;

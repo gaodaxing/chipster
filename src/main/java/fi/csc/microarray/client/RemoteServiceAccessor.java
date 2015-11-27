@@ -5,7 +5,7 @@ import java.util.Collection;
 import javax.ws.rs.client.WebTarget;
 
 import fi.csc.chipster.auth.AuthenticationClient;
-import fi.csc.chipster.client.RestFileBrokerClient;
+import fi.csc.chipster.filebroker.RestFileBrokerClient;
 import fi.csc.chipster.sessiondb.SessionDbClient;
 import fi.csc.microarray.client.operation.ToolModule;
 import fi.csc.microarray.client.tasks.TaskExecutor;
