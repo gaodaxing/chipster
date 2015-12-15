@@ -151,6 +151,10 @@ public class MicroarrayMain {
 				final String config = configURL;
 				final String restProxy = cmdParser.getValue("-rest-proxy");
 				
+				if (restProxy == null) {
+					throw new IllegalArgumentException("rest-proxy can't be null");
+				}
+				
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
 					public void run() {						

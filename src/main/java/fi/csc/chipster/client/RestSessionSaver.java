@@ -94,8 +94,8 @@ public class RestSessionSaver {
 		Dataset dataset = new Dataset();
 		dataset.setName(bean.getName());
 		dataset.setNotes(bean.getNotes());
-		dataset.setX(bean.getY());
-		dataset.setY(bean.getX());
+		dataset.setX(bean.getX());
+		dataset.setY(bean.getY());
 		return dataset;
 	}
 

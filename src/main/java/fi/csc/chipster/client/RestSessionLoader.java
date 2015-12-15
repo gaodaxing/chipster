@@ -84,8 +84,8 @@ public class RestSessionLoader {
 					dataManager.setOrVerifyChecksum(dataBean, dataset.getFile().getChecksum());
 				}
 				
-				Integer x = dataset.getY();
-				Integer y = dataset.getX();
+				Integer x = dataset.getX();
+				Integer y = dataset.getY();
 				
 				if (x != null && y != null) {
 					if (xOffset != null) {
