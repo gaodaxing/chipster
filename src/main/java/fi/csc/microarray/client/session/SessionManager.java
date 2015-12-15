@@ -33,6 +33,7 @@ import fi.csc.microarray.messaging.admin.StorageAdminAPI.StorageEntryMessageList
 import fi.csc.microarray.security.CryptoKey;
 import fi.csc.microarray.util.Exceptions;
 import fi.csc.microarray.util.Files;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class SessionManager {
 
@@ -669,8 +670,10 @@ public class SessionManager {
 		this.unsavedChanges = true;
 	}
 
+	
 	public UUID getSessionId() {
-		return this.sessionId;
+		// going to be used in RestFileBrokerClient
+		throw new NotImplementedException();
 	}
 
 	public void setSessionId(UUID sessionId) {
