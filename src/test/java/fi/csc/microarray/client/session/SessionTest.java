@@ -175,7 +175,7 @@ public class SessionTest {
 		toolModules.addAll(serviceAccessor.getModules());
 		FileBrokerClient fileBrokerClient = serviceAccessor.getFileBrokerClient();
 		
-		SessionManager sessionManager = new SessionManager(manager, null, fileBrokerClient, null);
+		SessionManager sessionManager = new SessionManager(manager, serviceAccessor, null);
 		
 		// create data
 		DataBean data = manager.createDataBean("test");

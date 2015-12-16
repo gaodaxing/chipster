@@ -221,7 +221,7 @@ public class SessionReplayTest extends MessagingTestBase {
 		// Load session
 		// some loading code uses Session.getSession().getDataManagers
 		Session.getSession().setDataManager(sourceManager);
-		SessionManager sourceSessionManager = new SessionManager(sourceManager, serviceAccessor.getTaskExecutor(), serviceAccessor.getFileBrokerClient(), null);
+		SessionManager sourceSessionManager = new SessionManager(sourceManager, serviceAccessor, null);
 		sourceSessionManager.loadLocalSession(session, false);
 		Session.getSession().setDataManager(manager);
 		

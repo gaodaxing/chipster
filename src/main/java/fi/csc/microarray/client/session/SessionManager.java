@@ -17,23 +17,21 @@ import org.apache.log4j.Logger;
 
 import fi.csc.chipster.client.RestSessionSaver;
 import fi.csc.microarray.client.ClientApplication;
+import fi.csc.microarray.client.ServiceAccessor;
 import fi.csc.microarray.client.Session;
 import fi.csc.microarray.client.dialog.ChipsterDialog.DetailsVisibility;
 import fi.csc.microarray.client.dialog.DialogInfo.Severity;
 import fi.csc.microarray.client.operation.OperationRecord;
-import fi.csc.microarray.client.tasks.TaskExecutor;
 import fi.csc.microarray.databeans.DataChangeEvent;
 import fi.csc.microarray.databeans.DataChangeListener;
 import fi.csc.microarray.databeans.DataManager;
 import fi.csc.microarray.filebroker.DbSession;
-import fi.csc.microarray.filebroker.FileBrokerClient;
 import fi.csc.microarray.filebroker.FileBrokerException;
 import fi.csc.microarray.filebroker.QuotaExceededException;
 import fi.csc.microarray.messaging.admin.StorageAdminAPI.StorageEntryMessageListener;
 import fi.csc.microarray.security.CryptoKey;
 import fi.csc.microarray.util.Exceptions;
 import fi.csc.microarray.util.Files;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class SessionManager {
 
@@ -77,10 +75,9 @@ public class SessionManager {
 	private LinkedList<File> deadDirectories = new LinkedList<File>();
 
 	private DataManager dataManager;
-	private FileBrokerClient fileBrokerClient;
 	private SessionManagerCallback callback;
-	private TaskExecutor taskExecutor;
 	private UUID sessionId;
+	private ServiceAccessor serviceAccessor;
 
 	/**
 	 * @param dataManager
@@ -92,11 +89,10 @@ public class SessionManager {
 	 * @throws IOException
 	 */
 	public SessionManager(final DataManager dataManager,
-			TaskExecutor taskExecutor, FileBrokerClient fileBrokerClient, SessionManagerCallback callback)
+			ServiceAccessor serviceAccessor, SessionManagerCallback callback)
 			throws IOException {
 		this.dataManager = dataManager;
-		this.taskExecutor = taskExecutor;
-		this.fileBrokerClient = fileBrokerClient;
+		this.serviceAccessor = serviceAccessor;
 		if (callback == null) {
 			this.callback = new BasicSessionManagerCallback();
 		} else {
@@ -311,11 +307,11 @@ public class SessionManager {
 	}
 
 	public List<DbSession> listRemoteSessions() throws FileBrokerException {
-		return fileBrokerClient.listRemoteSessions();
+		return serviceAccessor.getFileBrokerClient().listRemoteSessions();
 	}
 	
 	public StorageEntryMessageListener getStorageUsage() throws FileBrokerException, InterruptedException {
-		return fileBrokerClient.getStorageUsage();
+		return serviceAccessor.getFileBrokerClient().getStorageUsage();
 	}
 
 	public void setSession(File sessionFile, String sessionId)
@@ -544,7 +540,7 @@ public class SessionManager {
 	public void clearSessionWithoutConfirming() throws MalformedURLException,
 	FileBrokerException {
 		dataManager.deleteAllDataItems();
-		taskExecutor.clear();
+		serviceAccessor.getTaskExecutor().clear();
 		setSessionNotes(null);
 		setSession(null, null);
 		unsavedChanges = false;
@@ -566,7 +562,7 @@ public class SessionManager {
 			return false;
 		}
 
-		fileBrokerClient.removeRemoteSession(sessionUuid);
+		serviceAccessor.getFileBrokerClient().removeRemoteSession(sessionUuid);
 		return true;
 	}
 
@@ -672,8 +668,7 @@ public class SessionManager {
 
 	
 	public UUID getSessionId() {
-		// going to be used in RestFileBrokerClient
-		throw new NotImplementedException();
+		return this.sessionId;
 	}
 
 	public void setSessionId(UUID sessionId) {

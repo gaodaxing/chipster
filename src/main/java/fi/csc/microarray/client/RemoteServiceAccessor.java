@@ -57,9 +57,8 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 	public void initialise(DataManager manager, AuthenticationRequestListener authenticationRequestListener) throws Exception {								
 		
 		this.endpoint = new JMSMessagingEndpoint(nodeSupport, authenticationRequestListener, true);		
-		this.initialise(endpoint, 
-				manager, 
-				new RestFileBrokerClient(getSessionDbClient(), restProxy, getAuthClient(), Session.getSession().getApplication().getSessionManager()));
+		RestFileBrokerClient filebrokerCLient = new RestFileBrokerClient(getSessionDbClient(), restProxy, getAuthClient(), Session.getSession().getApplication().getSessionManager());
+		this.initialise(endpoint, manager, filebrokerCLient);
 	}		
 
 	
@@ -168,7 +167,7 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 
 
 	public WebTarget getRestFileBrokerTarget() {
-		// impelent a proper client API for the file-broker
+		// implement a proper client API for the file-broker
 		return getAuthClient().getAuthenticatedClient().target("http://" + restProxy + "/filebroker/");
 	}
 
