@@ -7,7 +7,7 @@ import javax.ws.rs.client.WebTarget;
 import org.apache.log4j.Logger;
 
 import fi.csc.chipster.auth.AuthenticationClient;
-import fi.csc.chipster.filebroker.RestFileBrokerClient;
+import fi.csc.chipster.filebroker.LegacyRestFileBrokerClient;
 import fi.csc.chipster.sessiondb.SessionDbClient;
 import fi.csc.microarray.client.operation.ToolModule;
 import fi.csc.microarray.client.tasks.TaskExecutor;
@@ -57,7 +57,7 @@ public class RemoteServiceAccessor implements ServiceAccessor {
 	public void initialise(DataManager manager, AuthenticationRequestListener authenticationRequestListener) throws Exception {								
 		
 		this.endpoint = new JMSMessagingEndpoint(nodeSupport, authenticationRequestListener, true);		
-		RestFileBrokerClient filebrokerCLient = new RestFileBrokerClient(getSessionDbClient(), restProxy, getAuthClient(), Session.getSession().getApplication().getSessionManager());
+		LegacyRestFileBrokerClient filebrokerCLient = new LegacyRestFileBrokerClient(getSessionDbClient(), restProxy, getAuthClient(), Session.getSession().getApplication().getSessionManager());
 		this.initialise(endpoint, manager, filebrokerCLient);
 	}		
 
