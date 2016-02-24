@@ -12,7 +12,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 
-import javax.jms.JMSException;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -33,7 +32,9 @@ import fi.csc.microarray.config.DirectoryLayout;
 import fi.csc.microarray.constants.VisualConstants;
 import fi.csc.microarray.databeans.DataBean;
 import fi.csc.microarray.databeans.DataItem;
+import fi.csc.microarray.filebroker.FileBrokerException;
 import fi.csc.microarray.module.Module;
+import fi.csc.microarray.module.basic.BasicModule;
 import fi.csc.microarray.util.Files;
 
 @SuppressWarnings("serial")
@@ -50,6 +51,7 @@ public class MicroarrayMenuBar extends JMenuBar implements PropertyChangeListene
 	private JMenu importMenu = null;
 	private JMenuItem directImportMenuItem = null;
 	private JMenuItem importFromURLMenuItem = null;
+	private JMenuItem importFromURLToServerMenuItem = null;
 	private JMenuItem importFromClipboardMenuItem = null;
 	private JMenuItem openWorkflowsMenuItem = null;
 	private JMenuItem openWorkflowsForEachMenuItem = null;
@@ -198,6 +200,7 @@ public class MicroarrayMenuBar extends JMenuBar implements PropertyChangeListene
 			}
 				
 			importMenu.add(getImportFromURLMenuItem());
+			importMenu.add(getImportFromURLToServerMenuItem());
 			importMenu.add(getImportFromClipboardMenuItem());
 		}
 		return importMenu;
@@ -224,7 +227,7 @@ public class MicroarrayMenuBar extends JMenuBar implements PropertyChangeListene
 	private JMenuItem getImportFromURLMenuItem() {
 		if (importFromURLMenuItem == null) {
 			importFromURLMenuItem = new JMenuItem();
-			importFromURLMenuItem.setText("URL...");
+			importFromURLMenuItem.setText("URL to client...");
 			importFromURLMenuItem.addActionListener(new java.awt.event.ActionListener() {
 				public void actionPerformed(java.awt.event.ActionEvent e) {
 					try {
@@ -236,6 +239,19 @@ public class MicroarrayMenuBar extends JMenuBar implements PropertyChangeListene
 			});
 		}
 		return importFromURLMenuItem;
+	}
+
+	private JMenuItem getImportFromURLToServerMenuItem() {
+		if (importFromURLToServerMenuItem == null) {
+			importFromURLToServerMenuItem = new JMenuItem();
+			importFromURLToServerMenuItem.setText("URL directly to server...");
+			importFromURLToServerMenuItem.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					BasicModule.importFromUrlToServer();
+				}
+			});
+		}
+		return importFromURLToServerMenuItem;
 	}
 
 	private JMenuItem getHelpWorkflowMenuItem() {
@@ -816,7 +832,7 @@ public class MicroarrayMenuBar extends JMenuBar implements PropertyChangeListene
 				public void actionPerformed(ActionEvent e) {
 					try {
 						application.clearSession();
-					} catch (MalformedURLException | JMSException e1) {
+					} catch (MalformedURLException | FileBrokerException e1) {
 						application.reportException(e1);
 					}
 				}
@@ -829,9 +845,9 @@ public class MicroarrayMenuBar extends JMenuBar implements PropertyChangeListene
 	private JMenuItem getLoadSessionMenuItem(final boolean clear) {
 		JMenuItem loadSessionMenuItem = new JMenuItem();
 		if (clear) {			
-			loadSessionMenuItem.setText("Open cloud session...");
+			loadSessionMenuItem.setText("Open cloud session... (BETA)");
 		} else {
-			loadSessionMenuItem.setText("cloud session...");
+			loadSessionMenuItem.setText("Cloud session... (BETA)");
 		}
 		loadSessionMenuItem.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -853,7 +869,7 @@ public class MicroarrayMenuBar extends JMenuBar implements PropertyChangeListene
 			loadLocalSessionMenuItem.setText("Open local session...");
 			loadLocalSessionMenuItem.setAccelerator(KeyStroke.getKeyStroke('O', Toolkit.getDefaultToolkit().getMenuShortcutKeyMask(), false));
 		} else {
-			loadLocalSessionMenuItem.setText("local session...");
+			loadLocalSessionMenuItem.setText("Local session...");
 		}
 		loadLocalSessionMenuItem.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -871,7 +887,7 @@ public class MicroarrayMenuBar extends JMenuBar implements PropertyChangeListene
 	private JMenuItem getSaveSessionMenuItem() {
 		if (saveSessionMenuItem == null) {
 			saveSessionMenuItem = new JMenuItem();
-			saveSessionMenuItem.setText("Save cloud session...");
+			saveSessionMenuItem.setText("Save cloud session... (BETA)");
 			saveSessionMenuItem.addActionListener(new java.awt.event.ActionListener() {
 				public void actionPerformed(java.awt.event.ActionEvent e) {
 					application.saveSession(SessionSavingMethod.UPLOAD_DATA_TO_SERVER);
@@ -884,7 +900,7 @@ public class MicroarrayMenuBar extends JMenuBar implements PropertyChangeListene
 	private JMenuItem getManageSessionsMenuItem() {
 		if (manageSessionsMenuItem == null) {
 			manageSessionsMenuItem = new JMenuItem();
-			manageSessionsMenuItem.setText("Manage cloud sessions...");
+			manageSessionsMenuItem.setText("Manage cloud sessions... (BETA)");
 			manageSessionsMenuItem.addActionListener(new java.awt.event.ActionListener() {
 				public void actionPerformed(java.awt.event.ActionEvent e) {
 					application.manageRemoteSessions();

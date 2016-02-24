@@ -7,14 +7,15 @@ package fi.csc.microarray.messaging.message;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 import javax.jms.JMSException;
 import javax.jms.MapMessage;
 
 import org.apache.log4j.Logger;
 
-import fi.csc.microarray.analyser.ToolDescription;
-import fi.csc.microarray.analyser.ToolDescription.ParameterDescription;
+import fi.csc.microarray.comp.ToolDescription;
+import fi.csc.microarray.comp.ToolDescription.ParameterDescription;
 
 
 /**
@@ -23,11 +24,11 @@ import fi.csc.microarray.analyser.ToolDescription.ParameterDescription;
  * @author Taavi Hupponen, Aleksi Kallio
  *
  */
-public class JobMessage extends PayloadMessage {
+public class JobMessage extends PayloadMessage implements GenericJobMessage {
 
 	public static interface ParameterSecurityPolicy {
 		/**
-		 * Checks that given value is valid from a security point of view. Analysis jobs
+		 * Checks that given value is valid from a security point of view. Comp jobs
 		 * implement this to provide context dependent checking. Typically validity depends
 		 * on the type of value (numeric, text...), so ParameterDescription is also passed.
 		 * 
@@ -47,9 +48,9 @@ public class JobMessage extends PayloadMessage {
 	private static final Logger logger = Logger.getLogger(JobMessage.class);
 	
 	private static final String KEY_JOB_ID = "jobID";
-	private static final String KEY_ANALYSIS_ID = "analysisID";
+	private static final String KEY_TOOL_ID = "analysisID";
 	
-	private String analysisId;
+	private String toolId;
 	private String jobId;
 	
 
@@ -60,10 +61,10 @@ public class JobMessage extends PayloadMessage {
 		super();
 	}
 	
-	public JobMessage(String jobId, String analysisId, List<String> parameters) {
+	public JobMessage(String jobId, String toolId, List<String> parameters) {
 		super(parameters);
 		this.jobId = jobId;
-		this.analysisId = analysisId;
+		this.toolId = toolId;
 	}
 
 	@Override
@@ -72,9 +73,9 @@ public class JobMessage extends PayloadMessage {
 
 		// load ids
 		this.jobId = from.getString(KEY_JOB_ID);
-		this.analysisId = from.getString(KEY_ANALYSIS_ID);
+		this.toolId = from.getString(KEY_TOOL_ID);
 		logger.debug("Unmarshalled " + KEY_JOB_ID + " : " + jobId);
-		logger.debug("Unmarshalled " + KEY_ANALYSIS_ID + " : " + analysisId);
+		logger.debug("Unmarshalled " + KEY_TOOL_ID + " : " + toolId);
 	
 	}
 	
@@ -86,25 +87,25 @@ public class JobMessage extends PayloadMessage {
 		super.marshal(mapMessage);
 		
 		logger.debug("Marshalling: " + KEY_JOB_ID + " : " + this.jobId);
-		logger.debug("Marshalling: " + KEY_ANALYSIS_ID + " : " + this.analysisId);
+		logger.debug("Marshalling: " + KEY_TOOL_ID + " : " + this.toolId);
 		
 		// add ids
 		mapMessage.setString(KEY_JOB_ID, this.jobId);
-		mapMessage.setString(KEY_ANALYSIS_ID, this.analysisId);
+		mapMessage.setString(KEY_TOOL_ID, this.toolId);
 	}
 	
 	/**
 	 * Returns identifier of the requested job.
 	 */
-	public String getAnalysisId() {
-		return this.analysisId;
+	public String getToolId() {
+		return this.toolId;
 	}
 
 	/**
-	 * @see #getAnalysisId()
+	 * @see #getToolId()
 	 */
-	public void setAnalysisId(String id) {
-		this.analysisId = id;
+	public void setToolId(String id) {
+		this.toolId = id;
 	}
 
 	public String getJobId() {
@@ -121,18 +122,32 @@ public class JobMessage extends PayloadMessage {
 	 * safety policy is required to get access to them.
 	 * 
 	 * @param securityPolicy security policy to check parameters against, cannot be null
-	 * @param description description of the analysis operation, cannot be null
+	 * @param description description of the tool, cannot be null
 	 * 
 	 * @throws ParameterValidityException if some parameter value fails check by security policy 
 	 */
 	public List<String> getParameters(ParameterSecurityPolicy securityPolicy, ToolDescription description) throws ParameterValidityException {
 		
+		return checkParameterSafety(securityPolicy, description, super.getParameters());
+	}
+	
+	/**
+	 * This should really be in the GenericJobMessage, but static methods in 
+	 * interfaces are only allowed starting from Java 1.8.
+	 * 
+	 * @param securityPolicy
+	 * @param description
+	 * @param parameters
+	 * @return
+	 * @throws ParameterValidityException
+	 */
+	public static List<String> checkParameterSafety(ParameterSecurityPolicy securityPolicy, ToolDescription description, List<String> parameters) throws ParameterValidityException {
 		// Do argument checking first
 		if (securityPolicy == null) {
 			throw new IllegalArgumentException("security policy cannot be null");
 		}
 		if (description == null) {
-			throw new IllegalArgumentException("analysis description cannot be null");
+			throw new IllegalArgumentException("tool description cannot be null");
 		}
 
 		// Count parameter descriptions
@@ -140,9 +155,6 @@ public class JobMessage extends PayloadMessage {
 		for (Iterator<ParameterDescription> iterator = description.getParameters().iterator(); iterator.hasNext(); iterator.next()) {
 			parameterDescriptionCount++;
 		}
-
-		// Get the actual values
-		List<String> parameters = super.getParameters();
 
 		// Check that description and values match
 		if (parameterDescriptionCount != parameters.size()) {
@@ -160,6 +172,12 @@ public class JobMessage extends PayloadMessage {
 		
 		// Everything was ok, return the parameters
 		return parameters;
+	}
+
+	@Override
+	public UUID getSessionId() {
+		// the datasetId is enough in JMS Chipster to access a dataset
+		return null;
 	}
 }
 	

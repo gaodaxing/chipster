@@ -18,7 +18,7 @@
 # Description: $APP_LONG_NAME
 ### END INIT INFO
 
-ACTIVEMQ_START_DELAY=10
+ACTIVEMQ_START_DELAY=5
 
 # detect chipster home
 if [ -h $0 ]
@@ -77,13 +77,12 @@ run() {
         $CHIPSTER_HOME/$1/bin/$PLATFORM/$BIN_FILE $2
     
     	# wait if needed    
-        if [ "$1" == "activemq" ]; then
-	        if [ "$2" == "start" ]; then
-    			echo Waiting $ACTIVEMQ_START_DELAY seconds for ActiveMQ to start...
-    			sleep $ACTIVEMQ_START_DELAY
-    		fi
-    	fi
-    	
+        #if [ "$1" == "activemq" ]; then
+	    #    if [ "$2" == "start" ]; then
+    	#			#echo Waiting $ACTIVEMQ_START_DELAY seconds for ActiveMQ to start...
+    	#		#sleep $ACTIVEMQ_START_DELAY
+    	#	fi
+    	#fi
     fi
 }
 
@@ -92,18 +91,18 @@ run() {
 start() {
 	run activemq start
     run fileserver start
+    run jobmanager start
     run webstart start
     run auth start
     run comp start
     run manager start
-    supervisorctl start chipster-jobmanager
 }
 
 stopit() {
-    supervisorctl stop chipster-jobmanager
     run auth stop
     run comp stop
 	run manager stop
+	run jobmanager stop
     run fileserver stop
     run webstart stop
     run activemq stop
@@ -112,11 +111,11 @@ stopit() {
 status() {
     run activemq status
     run fileserver status
+	run jobmanager status
     run webstart status
     run auth status
     run comp status
     run manager status
-    supervisorctl status chipster-jobmanager
 }
 
 case "$1" in

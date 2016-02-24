@@ -17,7 +17,7 @@
 	<property name="tool-editor-bin" location="${tool-editor}/bin/ant" />
 	<property name="modules-src-microarray" location="src/main/modules/microarray/java" />
 	<property name="modules-src-ngs" location="src/main/modules/ngs/java" />
-	<property name="modules" location="src/main/modules" />
+	<property name="modules" location="../chipster-tools/modules" />
 	<property name="test-src" location="src/test/java" />
 	<property name="ext-src" location="src/main/applications" />
 	<property name="lib" location="ext/lib" />
@@ -25,7 +25,7 @@
 	<property name="lib-ext" location="ext/lib-ext" />
 	<property name="ext-apps" location="ext/applications" />
 	<property name="data" location="src/main/resources" />
-	<property name="manual" location="src/main/manual" />
+	<property name="manual" location="../chipster-tools/manual" />
 	<property name="workflows" location="src/main/workflows" />
 	<property name="build" location="bin/ant" />	
 	<property name="dist" location="dist" />
@@ -39,7 +39,7 @@
     <typedef name="fatjar.filesource" classname="net.sf.fjep.anttask.FJFileSourceType" classpath="${fjepPath}" loaderref="lib.path.loader"/>
 
 	<!-- version numbering -->
-	<property name="release-version" value="3.4.2" />
+	<property name="release-version" value="3.7.1" />
 	<property name="release-jar" value="${dist}/chipster-${release-version}.jar" />
 	<property name="release-tar" value="${dist}/chipster-${release-version}.tar.gz" />
 	<property name="release-zip" value="${dist}/chipster-${release-version}.zip" />
@@ -403,6 +403,22 @@
 			<tarfileset file="${ext-src}/wrapper/comp-admin.sh" filemode="755" prefix="chipster/manager/bin" />
 		
 			
+			<!-- jobmanager -->
+			<tarfileset file="${ext-src}/wrapper/jobmanager/chipster-jobmanager-generic" filemode="755" fullpath="chipster/jobmanager/bin/chipster-jobmanager" />
+
+			<tarfileset file="${wrapper-linux-x86-32}/bin/wrapper" filemode="755" prefix="chipster/jobmanager/bin/linux-x86-32" />
+			<tarfileset file="${ext-src}/wrapper/jobmanager/chipster-jobmanager" filemode="755" prefix="chipster/jobmanager/bin/linux-x86-32" />
+
+			<tarfileset file="${wrapper-linux-x86-64}/bin/wrapper" filemode="755" prefix="chipster/jobmanager/bin/linux-x86-64" />
+			<tarfileset file="${ext-src}/wrapper/jobmanager/chipster-jobmanager" filemode="755" prefix="chipster/jobmanager/bin/linux-x86-64" />
+
+			<tarfileset dir="${ext-src}/wrapper/jobmanager/conf" prefix="chipster/jobmanager/conf" />
+			<tarfileset dir="${ext-src}/wrapper/jobmanager/logs" prefix="chipster/jobmanager/logs" /> <!-- must exist for wrapper -->
+			<tarfileset dir="${ext-src}/wrapper/jobmanager/security" prefix="chipster/jobmanager/security" />
+
+			
+			
+			
 			<!-- activemq -->
 			<!-- this looks weird because tar task does not preserve file permissions and activemq has messed up with some files -->
 			<tarfileset dir="${activemq-dist}" prefix="chipster/activemq" />
@@ -447,6 +463,9 @@
 			<lib dir="${tool-editor}/WebContent/WEB-INF/lib-ivy" />
 			<fileset dir="${tool-editor}/WebContent">
 				<include name="VAADIN/**"/>
+			</fileset>
+			<fileset dir="${src}">
+				<include name="fi/csc/chipster/toolbox/SADLTool.java"/>
 			</fileset>
 			<classes dir="${tool-editor-bin}" />
 		</war>

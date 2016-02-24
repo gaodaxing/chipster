@@ -80,7 +80,7 @@ public class JMSMessagingEndpoint implements MessagingEndpoint, MessagingListene
 	 * @throws TimeoutExpiredException when broker can not be reached
 	 */
 	public JMSMessagingEndpoint(Node master) throws MicroarrayException {
-		this(master, null);
+		this(master, null, false);
 	}
 	
 	/**
@@ -89,7 +89,7 @@ public class JMSMessagingEndpoint implements MessagingEndpoint, MessagingListene
 	 * 
 	 * @see #MessagingEndpoint(Node)
 	 */
-	public JMSMessagingEndpoint(Node master, AuthenticationRequestListener authenticationListener) throws MicroarrayException {
+	public JMSMessagingEndpoint(Node master, AuthenticationRequestListener authenticationListener, boolean useUnreliableAtStartup) throws MicroarrayException {
 		this.master = master;
 		this.authenticationListener = authenticationListener;
 
@@ -130,7 +130,7 @@ public class JMSMessagingEndpoint implements MessagingEndpoint, MessagingListene
 		try {
 			logger.info("connecting to " + brokerUrl);
 			String completeBrokerUrl = brokerUrl;
-			if (useReliable) {
+			if (useUnreliableAtStartup) {
 				// tests connecting with unreliable, so that if broker is not available, 
 				// we won't initiate retry sequence
 				logger.debug("testing connecting to " + completeBrokerUrl);
@@ -138,9 +138,16 @@ public class JMSMessagingEndpoint implements MessagingEndpoint, MessagingListene
 				Connection tempConnection = connectionFactory.createTopicConnection();
 				tempConnection.start();
 				tempConnection.stop();
-				tempConnection.close(); // it worked, we have a network connection
 				
-				// switch to reliable
+				try {
+					tempConnection.close(); // it worked, we have a network connection
+				} catch (Exception e) {
+					logger.warn("got exception when closing test connection");
+				}
+			}
+
+			// switch to reliable
+			if (useReliable) {
 				completeBrokerUrl = RELIABLE_CONNECTION_SPECIFIER + completeBrokerUrl;
 			}
 			
@@ -249,18 +256,28 @@ public class JMSMessagingEndpoint implements MessagingEndpoint, MessagingListene
 	public void replyToMessage(ChipsterMessage original, ChipsterMessage reply, String replyChannel) throws JMSException {
     	reply.setMultiplexChannel(replyChannel);
     	Destination replyToDest = original.getReplyTo();
-    	replyToMessage(replyToDest, reply);
+    	sendMessage(replyToDest, reply);
     }
+
 
 	/**
 	 * Not multithread safe.
 	 */
-    private void replyToMessage(Destination replyToDest, ChipsterMessage reply) throws JMSException {
+    public void sendMessageToClientReplyChannel(Destination replyToDest, ChipsterMessage message) throws JMSException {
+		message.setMultiplexChannel(DEFAULT_REPLY_CHANNEL);
+		sendMessage(replyToDest, message);
+    }
+
+    
+    /**
+	 * Not multithread safe.
+	 */
+    private void sendMessage(Destination replyToDest, ChipsterMessage message) throws JMSException {
 		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
     	try {
-			MapMessage msg = session.createMapMessage();
-	    	reply.marshal(msg);
-	    	session.createProducer(replyToDest).send(msg);
+			MapMessage mapMessage = session.createMapMessage();
+	    	message.marshal(mapMessage);
+	    	session.createProducer(replyToDest).send(mapMessage);
     	} finally {
     		session.close();
     	}
@@ -338,4 +355,5 @@ public class JMSMessagingEndpoint implements MessagingEndpoint, MessagingListene
 	public void setSessionID(String sessionID) {
 		this.sessionID = sessionID;
 	}
+
 }
