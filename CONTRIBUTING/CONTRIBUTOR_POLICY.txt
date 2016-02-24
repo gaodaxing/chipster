@@ -20,5 +20,3 @@ When contributing to the project, do the following:
  
  4) Include the commit in your pull request
  
- 
- 
