@@ -73,6 +73,7 @@ import fi.csc.microarray.databeans.HistoryText;
 import fi.csc.microarray.exception.MicroarrayException;
 import fi.csc.microarray.filebroker.ChecksumException;
 import fi.csc.microarray.filebroker.ChecksumInputStream;
+import fi.csc.microarray.messaging.AuthCancelledException;
 import fi.csc.microarray.messaging.SourceMessageListener;
 import fi.csc.microarray.messaging.auth.AuthenticationRequestListener;
 import fi.csc.microarray.messaging.auth.ClientLoginListener;
@@ -248,12 +249,23 @@ public abstract class ClientApplication {
 				serviceAccessor.close();
 				throw e;
 			}
+			reportInitialisationThreadSafely(" ok", true);
+			
+			// send first login
+			reportInitialisationThreadSafely("Logging in...", false);
+			try {
+				serviceAccessor.login();
+			} catch (AuthCancelledException ace) {
+				serviceAccessor.close();
+				System.exit(0);
+			}			
+			reportInitialisationThreadSafely(" ok", true);
+
 			
 			this.taskExecutor = serviceAccessor.getTaskExecutor();
 
 			this.sessionManager = new SessionManager(manager, taskExecutor, serviceAccessor.getFileBrokerClient(), new ClientSessionManagerCallback(this));
 			
-			reportInitialisationThreadSafely(" ok", true);
 
 			if (!fast) {
 				// Check services
@@ -702,7 +714,13 @@ public abstract class ClientApplication {
 			SourceMessageListener sourceListener = null;
 			try {
 				sourceListener = serviceAccessor.retrieveSourceCode(id);
-				String source = sourceListener.waitForResponse(60, TimeUnit.SECONDS);
+				String source;
+				try {
+					source = sourceListener.waitForResponse(60, TimeUnit.SECONDS);	
+				} catch (AuthCancelledException ace) {
+					return;
+				}
+				
 				listener.updateSourceCodeAt(i, source); // source can be null
 				
 			} catch (Exception e) {

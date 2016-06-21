@@ -39,15 +39,15 @@
     <typedef name="fatjar.filesource" classname="net.sf.fjep.anttask.FJFileSourceType" classpath="${fjepPath}" loaderref="lib.path.loader"/>
 
 	<!-- version numbering -->
-	<property name="release-version" value="3.8.1" />
+	<property name="release-version" value="3.9.2" />
 	<property name="release-jar" value="${dist}/chipster-${release-version}.jar" />
 	<property name="release-tar" value="${dist}/chipster-${release-version}.tar.gz" />
 	<property name="release-zip" value="${dist}/chipster-${release-version}.zip" />
 	<property name="config-tool-jar" value="${dist}/chipster-config-tool.jar" />
 	<property name="client-jar" value="${dist}/chipster-all-${release-version}.jar" />
 
-	<property name="javac-target" value="1.7" />
-	<property name="javac-source" value="1.7" />
+	<property name="javac-target" value="1.8" />
+	<property name="javac-source" value="1.8" />
 	
 	
 	<!-- external stuff -->
@@ -425,10 +425,12 @@
 
 			<tarfileset file="${wrapper-linux-x86-64}/bin/wrapper" filemode="755" prefix="chipster/toolbox/bin/linux-x86-64" />
 			<tarfileset file="${ext-src}/wrapper/toolbox/chipster-toolbox" filemode="755" prefix="chipster/toolbox/bin/linux-x86-64" />
-
+			<tarfileset file="${ext-src}/wrapper/toolbox/reload-tools.sh" filemode="755" prefix="chipster/toolbox" />
+			
 			<tarfileset dir="${ext-src}/wrapper/toolbox/conf" prefix="chipster/toolbox/conf" />
 			<tarfileset dir="${ext-src}/wrapper/toolbox/logs" prefix="chipster/toolbox/logs" /> <!-- must exist for wrapper -->
 			<tarfileset dir="${ext-src}/wrapper/toolbox/security" prefix="chipster/toolbox/security" />
+			
 
 			
 			
@@ -499,4 +501,3 @@
 		</war>
 	</target>
 </project>
-
