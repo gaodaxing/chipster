@@ -153,7 +153,7 @@ public abstract class OnDiskCompJobBase extends CompJob {
 	                if (!fileDescription.isOptional()) {
 	                    logger.error("required output file not found", e);
 	                    this.setErrorMessage("Required output file is missing.");
-	                    this.setOutputText(Exceptions.getStackTrace(e));
+	                    this.appendOutputText(Exceptions.getStackTrace(e));
 	                    updateState(JobState.ERROR);
 	                    return;
 	                }

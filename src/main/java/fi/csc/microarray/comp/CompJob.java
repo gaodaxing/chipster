@@ -58,8 +58,7 @@ import fi.csc.microarray.util.Exceptions;
  */
 public abstract class CompJob implements Runnable {
 
-	public static String SCRIPT_SUCCESSFUL_STRING = "script-finished-succesfully";
-	public static String SCRIPT_FAILED_STRING = "script-finished-unsuccesfully";	
+	public static String SCRIPT_SUCCESSFUL_STRING = "chipster-script-finished-succesfully";
 	public static final String CHIPSTER_NOTE_TOKEN = "CHIPSTER-NOTE:"; 
 
 	private static final Logger logger = Logger.getLogger(CompJob.class);
@@ -314,6 +313,15 @@ public abstract class CompJob implements Runnable {
 	
 	public void setOutputText(String output) {
 		this.outputMessage.setOutputText(output);
+	}
+	
+	public void appendOutputText(String s) {
+		String currentOutput = this.outputMessage.getOutputText();
+		if (currentOutput != null) {
+			this.outputMessage.setOutputText(currentOutput + "\n" + s);
+		} else {
+			this.outputMessage.setOutputText(s);
+		}
 	}
 	
 	public ToolDescription getToolDescription() {

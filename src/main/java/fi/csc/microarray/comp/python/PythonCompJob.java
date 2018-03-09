@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
@@ -39,7 +40,8 @@ public class PythonCompJob extends OnDiskCompJobBase {
 
 	public static final String STRING_DELIMETER = "'";
 
-	public final String ERROR_MESSAGE_TOKEN = "Traceback";
+	public static final String ERROR_MESSAGE_TOKEN = "Traceback";
+	private static final Pattern SUCCESS_STRING_PATTERN = Pattern.compile("^" + SCRIPT_SUCCESSFUL_STRING + "$");
 
 	/**
 	 * Checks that parameter values are safe to insert into Python code. Should
@@ -241,7 +243,7 @@ public class PythonCompJob extends OnDiskCompJobBase {
 		cancelCheck();
 		logger.debug("about to start the Python process monitor.");
 		processMonitor = new ProcessMonitor(process, (screenOutput) -> onScreenOutputUpdate(screenOutput),
-				(jobState, screenOutput) -> jobFinished(jobState, "", screenOutput), waitProcessLatch);
+				(jobState, screenOutput) -> jobFinished(jobState, "", screenOutput), SUCCESS_STRING_PATTERN, waitProcessLatch);
 
 		new Thread(processMonitor).start();
 
@@ -386,7 +388,7 @@ public class PythonCompJob extends OnDiskCompJobBase {
 				}
 			} else {
 				// set default error message for failed R script
-				this.setErrorMessage("Running R script failed.");
+				this.setErrorMessage("Running Python script failed.");
 			}
 		}
 
