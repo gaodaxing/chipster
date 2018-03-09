@@ -241,14 +241,12 @@ public class PythonCompJob extends OnDiskCompJobBase {
 
 		// launch the process monitor
 		cancelCheck();
-		logger.debug("about to start the Python process monitor.");
 		processMonitor = new ProcessMonitor(process, (screenOutput) -> onScreenOutputUpdate(screenOutput),
-				(jobState, screenOutput) -> jobFinished(jobState, "", screenOutput), SUCCESS_STRING_PATTERN, waitProcessLatch);
+				(jobState, screenOutput) -> jobFinished(jobState, "", screenOutput), SUCCESS_STRING_PATTERN);
 
 		new Thread(processMonitor).start();
 
 		// write the input to process
-		logger.debug("writing the input to Python.");
 		BufferedWriter writer = null;
 		try {
 			writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
@@ -362,41 +360,46 @@ public class PythonCompJob extends OnDiskCompJobBase {
 	}
 
 	private synchronized void jobFinished(JobState state, String stateDetails, String screenOutput) {
-		// check if job already finished for some reason like cancel
-		if (this.getState().isFinished()) {
-			return;
-		}
+		try {
 
-		// add output to result message
-		// remove the first line (setwd(...))
-		String cleanedOutput = screenOutput.substring(screenOutput.indexOf(("\n")));
-		this.setOutputText(cleanedOutput);
-
-		// for a failed job, get error message from screen output
-		boolean noteFound = false;
-		if (state == JobState.FAILED) {
-			String errorMessage = getErrorMessage(cleanedOutput, ERROR_MESSAGE_TOKEN, null);
-
-			// check if error message contains chipster note
-			if (errorMessage != null && !errorMessage.isEmpty()) {
-				String noteErrorMessage = getChipsterNote(errorMessage);
-				if (noteErrorMessage != null) {
-					this.setErrorMessage(noteErrorMessage);
-					noteFound = true;
-				} else {
-					this.setErrorMessage(errorMessage);
-				}
-			} else {
-				// set default error message for failed R script
-				this.setErrorMessage("Running Python script failed.");
+			// check if job already finished for some reason like cancel
+			if (this.getState().isFinished()) {
+				return;
 			}
-		}
 
-		// update state
-		if (noteFound) {
-			this.updateState(JobState.FAILED_USER_ERROR, stateDetails);
-		} else {
-			this.updateState(state, stateDetails);
+			// add output to result message
+			// remove the first line (setwd(...))
+			String cleanedOutput = screenOutput.substring(screenOutput.indexOf(("\n")));
+			this.setOutputText(cleanedOutput);
+
+			// for a failed job, get error message from screen output
+			boolean noteFound = false;
+			if (state == JobState.FAILED) {
+				String errorMessage = getErrorMessage(cleanedOutput, ERROR_MESSAGE_TOKEN, null);
+
+				// check if error message contains chipster note
+				if (errorMessage != null && !errorMessage.isEmpty()) {
+					String noteErrorMessage = getChipsterNote(errorMessage);
+					if (noteErrorMessage != null) {
+						this.setErrorMessage(noteErrorMessage);
+						noteFound = true;
+					} else {
+						this.setErrorMessage(errorMessage);
+					}
+				} else {
+					// set default error message for failed R script
+					this.setErrorMessage("Running Python script failed.");
+				}
+			}
+
+			// update state
+			if (noteFound) {
+				this.updateState(JobState.FAILED_USER_ERROR, stateDetails);
+			} else {
+				this.updateState(state, stateDetails);
+			}
+		} finally {
+			this.waitProcessLatch.countDown();
 		}
 	}
 

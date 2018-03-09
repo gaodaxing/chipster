@@ -42,9 +42,9 @@ public class RCompJob extends OnDiskCompJobBase {
 
 	public static final String ERROR_MESSAGE_TOKEN = "Error: ";
 	public static final String LAST_LINE_TO_REMOVE_TOKEN = "Execution halted";
-	
+
 	private static final Pattern SUCCESS_STRING_PATTERN = Pattern.compile("^\\[.*\\] \"" + SCRIPT_SUCCESSFUL_STRING + "\"$");
-	
+
 
 	/**
 	 * Checks that parameter values are safe to insert into R code. Should closely
@@ -231,7 +231,7 @@ public class RCompJob extends OnDiskCompJobBase {
 		cancelCheck();
 		logger.debug("about to start the R process monitor.");
 		processMonitor = new ProcessMonitor(process, (screenOutput) -> onScreenOutputUpdate(screenOutput),
-				(jobState, screenOutput) -> jobFinished(jobState, "", screenOutput), SUCCESS_STRING_PATTERN, waitProcessLatch);
+				(jobState, screenOutput) -> jobFinished(jobState, "", screenOutput), SUCCESS_STRING_PATTERN);
 
 		new Thread(processMonitor).start();
 
@@ -346,41 +346,46 @@ public class RCompJob extends OnDiskCompJobBase {
 	}
 
 	private synchronized void jobFinished(JobState state, String stateDetails, String screenOutput) {
-		// check if job already finished for some reason like cancel
-		if (this.getState().isFinished()) {
-			return;
-		}
+		try {
 
-		// add output to result message
-		// remove the first line (setwd(...))
-		String cleanedOutput = screenOutput.substring(screenOutput.indexOf(("\n")));
-		this.setOutputText(cleanedOutput);
-
-		// for a failed job, get error message from screen output
-		boolean noteFound = false;
-		if (state == JobState.FAILED) {
-			String errorMessage = getErrorMessage(cleanedOutput, ERROR_MESSAGE_TOKEN, LAST_LINE_TO_REMOVE_TOKEN);
-
-			// check if error message contains chipster note
-			if (errorMessage != null && !errorMessage.isEmpty()) {
-				String noteErrorMessage = getChipsterNote(errorMessage);
-				if (noteErrorMessage != null) {
-					this.setErrorMessage(noteErrorMessage);
-					noteFound = true;
-				} else {
-					this.setErrorMessage(errorMessage);
-				}
-			} else {
-				// set default error message for failed R script
-				this.setErrorMessage("Running R script failed.");
+			// check if job already finished for some reason like cancel
+			if (this.getState().isFinished()) {
+				return;
 			}
-		}
 
-		// update state
-		if (noteFound) {
-			this.updateState(JobState.FAILED_USER_ERROR, stateDetails);
-		} else {
-			this.updateState(state, stateDetails);
+			// add output to result message
+			// remove the first line (setwd(...))
+			String cleanedOutput = screenOutput.substring(screenOutput.indexOf(("\n")));
+			this.setOutputText(cleanedOutput);
+
+			// for a failed job, get error message from screen output
+			boolean noteFound = false;
+			if (state == JobState.FAILED) {
+				String errorMessage = getErrorMessage(cleanedOutput, ERROR_MESSAGE_TOKEN, LAST_LINE_TO_REMOVE_TOKEN);
+
+				// check if error message contains chipster note
+				if (errorMessage != null && !errorMessage.isEmpty()) {
+					String noteErrorMessage = getChipsterNote(errorMessage);
+					if (noteErrorMessage != null) {
+						this.setErrorMessage(noteErrorMessage);
+						noteFound = true;
+					} else {
+						this.setErrorMessage(errorMessage);
+					}
+				} else {
+					// set default error message for failed R script
+					this.setErrorMessage("Running R script failed.");
+				}
+			}
+
+			// update state
+			if (noteFound) {
+				this.updateState(JobState.FAILED_USER_ERROR, stateDetails);
+			} else {
+				this.updateState(state, stateDetails);
+			}
+		} finally {
+			this.waitProcessLatch.countDown();
 		}
 	}
 
